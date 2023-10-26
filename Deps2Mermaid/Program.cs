@@ -6,25 +6,40 @@ namespace Deps;
 
 public class Program
 {
+    public static IEnumerable<string> PathToProjectAssetsFiles(string path)
+    {
+        if (path.EndsWith('*'))
+            return Directory.GetFiles(path[..^1], "project.assets.json", SearchOption.AllDirectories);
+        return new [] { Path.Combine(path, "obj/project.assets.json") }.Where(File.Exists);
+    }
     public static void Main(string[] args)
     {
         Arguments = CommandLineArguments.Parse(args);
+        
         if (Arguments.Help)
         {
             CommandLineArguments.ShowHelp();
             return;
         }
-        
-        using var projectAssetsFile = File.Open(Path.Combine(Arguments.Path, "obj/project.assets.json"), FileMode.Open,
-            FileAccess.Read);
-        var projectAssets = new ProjectAssetsJsonReader(projectAssetsFile);
-        var dependencies = projectAssets.Dependencies.ToArray();
+        Verbose($"{args.Length} arguments given.");
+        Verbose($"{string.Join(Environment.NewLine, args.Select(x => $"  {x}"))}");
+
+        var allPaths = Arguments.Path.Split(',').SelectMany(PathToProjectAssetsFiles).ToArray();
+        Verbose($"Using {allPaths.Length} project.assets.json files.");
+        Verbose($"{string.Join(Environment.NewLine, allPaths.Select(x => $"  {x}"))}");
+        var allProjectAssets = allPaths.Select(ProjectAssetsJsonReader.FromPath).ToArray();
+        var dependencies = (from projectAssets in  allProjectAssets
+                            from dep in projectAssets.Dependencies
+                            select dep).Distinct().ToArray();
+        Verbose($"Found {dependencies.Length} dependencies.");
         var nodes = ComponentNode.GetNodes(dependencies).ToDictionary(c => c.Name);
+        Verbose($"Found {nodes.Count} nodes.");
         var forwardLinks = dependencies.ToLookup(d => d.Component.Name);
         var backwardLinks = dependencies.ToLookup(d => d.Reference.Name);
 
         if (Arguments.ProjectRoot)
-            dependencies = Zoom(projectAssets.ProjectComponent().Name, nodes, forwardLinks, backwardLinks).ToArray();
+            dependencies = Zoom(string.Join("|", allProjectAssets.Select(x => $"^{x.ProjectComponent().Name}$")), 
+                nodes, forwardLinks, backwardLinks).ToArray();
         else if (Arguments.Zoom is not null)
             dependencies = Zoom(Arguments.Zoom, nodes, forwardLinks, backwardLinks).ToArray();
 
@@ -47,6 +62,7 @@ public class Program
         {
             foreach (var key in nodes.Keys.Where(x => regex.IsMatch(x)))
                 todo.Push(key);
+            Verbose($"Applying zoom filter {filter} results in {todo.Count} nodes.");
             while (todo.Count > 0)
             {
                 var name = todo.Pop();
@@ -76,9 +92,15 @@ public class Program
     {
         var done = new HashSet<string>();
         var filter = new Regex(Arguments.Filter);
-        foreach (var dep in dependencies.Where(
-                     d => filter.IsMatch(d.Component.Name) || filter.IsMatch(d.Reference.Name)))
+        var strongFilter = new Regex(Arguments.StrongFilter);
+        foreach (var dep in dependencies)
         {
+            if (!((filter.IsMatch(dep.Component.Name) || filter.IsMatch(dep.Reference.Name))
+                  && strongFilter.IsMatch(dep.Component.Name) && strongFilter.IsMatch(dep.Reference.Name)))
+            {
+                Verbose($"Skipping {dep}...");
+                continue;
+            }
             Console.Write("  ");
             WriteReference(nodes[dep.Component.Name]);
             WriteLink(dep);
@@ -89,7 +111,7 @@ public class Program
         void WriteReference(ComponentNode r)
         {
             if (done.Add(r.Name))
-                Console.Write($"{r.Name}[\"{r.Name}\r\n    {string.Join(", ", r.VersionRanges)}\"]");
+                Console.Write($"{r.Name}[\"{r.Name}\r\n    {string.Join(", ", r.VersionRanges.OrderBy(x => x.Min))}\"]");
             else
                 Console.Write(r.Name);
         }
@@ -97,17 +119,23 @@ public class Program
         void WriteLink(Dependency d)
         {
             if (nodes[d.Component.Name].VersionRanges.HasSingle() && nodes[d.Reference.Name].VersionRanges.HasSingle())
-                Console.WriteLine(" --> ");
+                Console.Write(" --> ");
             else
             {
                 var left = nodes[d.Component.Name].VersionRanges.HasSingle() ? "" : d.Component.Version.ToString();
                 var right = nodes[d.Reference.Name].VersionRanges.HasSingle()
                     ? ""
                     : d.Reference.VersionRange.ToString();
-                Console.WriteLine($" -- \"{left} -> {right}\"--> ");
+                Console.Write($" -- \"{left} -> {right}\"--> ");
             }
         }
     }
 
     public static CommandLineArguments Arguments { get; private set; }
+
+    public static void Verbose(FormattableString text)
+    {
+        if (Arguments.Verbose)
+            Console.Error.WriteLine(text);
+    }
 }

@@ -5,6 +5,12 @@ namespace Deps;
 
 public class ProjectAssetsJsonReader
 {
+    public static ProjectAssetsJsonReader FromPath(string path)
+    {
+        using var stream = File.Open(path, FileMode.Open, FileAccess.Read);
+        return new ProjectAssetsJsonReader(stream);
+    }
+
     public ProjectAssetsJsonReader(Stream stream)
     {
         Root = JsonSerializer.Deserialize<JsonObject>(stream) ??
