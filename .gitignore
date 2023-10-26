@@ -4,3 +4,4 @@ obj
 
 *.nupkg
 .run
+.DS_Store

@@ -10,11 +10,11 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>deps2mermaid</ToolCommandName>
         <PackageOutputPath>./nupkg</PackageOutputPath>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/joost-morsink/Deps2Mermaid.git</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/joost-morsink/Deps2Mermaid</PackageProjectUrl>
+        <Authors>Joost Morsink</Authors>
+        <Description>A dotnet tool to visualize .Net project dependencies in a Mermaid diagram.</Description>
     </PropertyGroup>
-
-
-    <ItemGroup>
-      <Folder Include="nupkg\" />
-    </ItemGroup>
-
 </Project>
