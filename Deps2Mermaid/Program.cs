@@ -76,8 +76,7 @@ public class Program
         {
             UseShellExecute = true,
             WorkingDirectory = Directory.GetCurrentDirectory(),
-            FileName = "open",
-            Arguments = url
+            FileName = url
         };
         Process.Start(psi);
     }

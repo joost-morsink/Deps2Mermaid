@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Deps</RootNamespace>
-        <VersionPrefix>1.1.0</VersionPrefix>
+        <VersionPrefix>1.1.1</VersionPrefix>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>deps2mermaid</ToolCommandName>
         <PackageOutputPath>./nupkg</PackageOutputPath>
