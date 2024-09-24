@@ -24,8 +24,9 @@ public class ProjectAssetsJsonReader
 
     private IEnumerable<Dependency> TargetDependencies()
     {
-        if (Root["targets"] is JsonObject targets
-            && targets.FirstOrDefault().Value is JsonObject target)
+        // if (Root["targets"] is JsonObject targets
+        //     && targets.FirstOrDefault().Value is JsonObject target)
+        foreach(var target in (Root["targets"] as JsonObject)?.Select(x => x.Value).OfType<JsonObject>() ?? Enumerable.Empty<JsonObject>())
         {
             foreach (var x in target)
             {
