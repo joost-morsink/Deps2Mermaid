@@ -2,9 +2,19 @@ using System.Reflection;
 
 namespace Deps;
 
-public record CommandLineArguments(string Path, bool Help, string Filter, string StrongFilter, string Exclude,
-    string WeakExclude, string? Zoom,
-    int Forward, int Backward, bool ProjectRoot, bool Verbose, bool Live)
+public enum OutputType
+{
+    Mermaid,
+    Live,
+    Url,
+    ImageUrl,
+    Markdown
+}
+public record CommandLineArguments(string Path, bool Help,
+    string Filter, string StrongFilter, 
+    string Exclude, string WeakExclude, 
+    string? Zoom,
+    int Forward, int Backward, bool ProjectRoot, bool Verbose, OutputType OutputType)
 {
     void Test()
     {
@@ -16,7 +26,7 @@ public record CommandLineArguments(string Path, bool Help, string Filter, string
             ?.InformationalVersion;
         Console.WriteLine(@$"
 Deps2Mermaid v{ver} - Convert project.assets.json to mermaid.js graph
-Usage: deps (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) (-projectroot|-pr)
+Usage: deps2mermaid (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) (-projectroot|-pr)
     
         -p(ath) [path]               Path to the project directory. Defaults to current directory.
         -help|-?                     Show this help.
@@ -34,6 +44,9 @@ Usage: deps (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) 
         -projectroot|-pr             Zoom to the project root.
         -verbose|-v                  Show verbose output.
         -l(ive)                      Open the graph in the browser.
+        -u(rl)                       Output the link to the graph in the browser.  
+        -i(mage-)u(rl)               Output an image link.
+        -md                          Output a markdown link.  
 ");
     }
 
@@ -45,7 +58,6 @@ Usage: deps (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) 
             {
                 ["?"] = ""
             };
-
         var path = positional.GetAtOrDefault(0) ??
                    named.GetValueOrDefault("path") ?? named.GetValueOrDefault("p") ?? ".";
         var help = named.ContainsKey("help") || named.ContainsKey("?");
@@ -67,6 +79,15 @@ Usage: deps (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) 
                 ? bwd
                 : int.MaxValue
             : 0;
+        var outputType = named.ContainsKey("live") || named.ContainsKey("l")
+            ? OutputType.Live
+            : named.ContainsKey("url") || named.ContainsKey("u")
+                ? OutputType.Url
+                : named.ContainsKey("imageurl") || named.ContainsKey("iu")
+                    ? OutputType.ImageUrl
+                    : named.ContainsKey("markdown") || named.ContainsKey("md")
+                        ? OutputType.Markdown
+                        : OutputType.Mermaid;
         if (forward == 0 && backward == 0)
         {
             forward = int.MaxValue;
@@ -74,7 +95,7 @@ Usage: deps (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) [zoom]) 
         }
 
         return new(path, help, filter, strongFilter, exclude, weakExclude, zoom, forward, backward, projectroot,
-            verbose, live);
+            verbose, outputType);
     }
 
     private static (IReadOnlyList<string> positional, IReadOnlyDictionary<string, string> named)

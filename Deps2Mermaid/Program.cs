@@ -48,15 +48,53 @@ public class Program
         else if (Arguments.Zoom is not null)
             dependencies = Zoom(Arguments.Zoom, nodes, forwardLinks, backwardLinks).ToArray();
 
-        if (Arguments.Live)
+        switch (Arguments.OutputType)
         {
-            OpenInBrowser(dependencies, nodes);
+            case OutputType.Live:
+                OpenInBrowser(dependencies, nodes);
+                break;
+            case OutputType.Markdown:
+                WriteMarkdown(Console.Out, dependencies, nodes);
+                break;
+            case OutputType.Url:
+                WriteUrl(Console.Out, dependencies, nodes);
+                break;
+            case OutputType.ImageUrl:
+                WriteImage(Console.Out, dependencies, nodes);
+                break;
+            case OutputType.Mermaid:
+                WriteToOutput(Console.Out, dependencies, nodes);
+                break;
         }
-        else
-            WriteToOutput(Console.Out, dependencies, nodes);
+    }
+
+    private static void WriteImage(TextWriter @out, Dependency[] dependencies, Dictionary<string, ComponentNode> nodes)
+    {
+        var str = CreateMermaidStringPayload(dependencies, nodes);
+        @out.WriteLine($"https://mermaid.ink/img/{str}");
+    }
+
+    private static void WriteUrl(TextWriter @out, Dependency[] dependencies, Dictionary<string, ComponentNode> nodes)
+    {
+        var str = CreateMermaidStringPayload(dependencies, nodes);
+        @out.WriteLine($"https://mermaid.live/edit#pako:{str}");
+    }
+
+    private static void WriteMarkdown(TextWriter @out, Dependency[] dependencies, Dictionary<string, ComponentNode> nodes)
+    {
+        var str = CreateMermaidStringPayload(dependencies, nodes);
+        @out.WriteLine($"[![](https://mermaid.ink/img/{str})](https://mermaid.live/edit#pako:{str})");
     }
 
     private static void OpenInBrowser(Dependency[] dependencies, Dictionary<string, ComponentNode> nodes)
+    {
+        var str = CreateMermaidStringPayload(dependencies, nodes);
+
+        var url = $"https://mermaid.live/edit#pako:{str}";
+        OpenUrlInBrowser(url);
+    }
+
+    private static string CreateMermaidStringPayload(Dependency[] dependencies, Dictionary<string, ComponentNode> nodes)
     {
         var payload = CreateMermaidPayload(dependencies, nodes);
         var str = Convert.ToBase64String(payload);
@@ -64,9 +102,7 @@ public class Program
         Verbose($"Original Base64: {str}");
         
         str=str.Replace("/", "_").Replace("+", "-");
-        
-        var url = $"https://mermaid.live/edit#pako:{str}";
-        OpenUrlInBrowser(url);
+        return str;
     }
 
     private static void OpenUrlInBrowser(string url)
