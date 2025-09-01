@@ -70,5 +70,21 @@ public class ProjectAssetsJsonReader
                     yield return new Dependency(project, Reference.Parse(x.Key));
             }
         }
+
+        if (Root["project"] is JsonObject proj
+            && proj["frameworks"] is JsonObject frameworks)
+        {
+            foreach(var fr in frameworks)
+            {
+                if (fr.Value is JsonObject fobj && fobj["dependencies"] is JsonObject dependencies)
+                {
+                    foreach (var y in dependencies)
+                        if (y.Value is JsonObject dep && dep["version"] is JsonValue version)
+                            yield return new Dependency(project,
+                                new Reference(y.Key, VersionRange.Parse(version.GetValue<string>()).MinimalToExact()));
+                }
+            }
+        }
+           
     }
 }

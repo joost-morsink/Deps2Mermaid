@@ -39,7 +39,7 @@ public readonly record struct VersionRange(Version Min, Version? Max, bool MinIn
             _ => throw new ArgumentException("Invalid reference format.", nameof(value))
         };
         var parts = value[1..^1].Split(',', 2);
-        return new VersionRange(Version.Parse(parts[0]), parts.Length == 1 ? null : Version.Parse(parts[1]),
+        return new VersionRange(Version.Parse(parts[0]), parts.Length == 1 ? null : Version.TryParse(parts[1]),
             minInclusive, maxInclusive);
     }
 
@@ -50,4 +50,6 @@ public readonly record struct VersionRange(Version Min, Version? Max, bool MinIn
         public int Compare(VersionRange x, VersionRange y)
             => x.Min.CompareTo(y.Min);
     }
+    public VersionRange MinimalToExact()
+        => Max is null ? new VersionRange(Min, Min, true, true) : this;
 }
