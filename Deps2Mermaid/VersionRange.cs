@@ -20,12 +20,51 @@ public readonly record struct VersionRange(Version Min, Version? Max, bool MinIn
             {MinInclusive: false, MaxInclusive: false} => $"({Min},{Max})"
         };
 
+    private static VersionRange ParseOperatorStyle(string value)
+    {
+        var parts = value.Split(' ');
+        Version? min = null, max = null;
+        bool minInclusive = false, maxInclusive = false;
+        for (int i = 0; i + 1 < parts.Length; i += 2)
+        {
+            switch (parts[i])
+            {
+                case ">":
+                    min = Version.Parse(parts[i + 1]);
+                    minInclusive = false;
+                    break;
+                case ">=":
+                    min = Version.Parse(parts[i + 1]);
+                    minInclusive = true;
+                    break;
+                case "<":
+                    max = Version.Parse(parts[i + 1]);
+                    maxInclusive = false;
+                    break;
+                case "<=":
+                    max = Version.Parse(parts[i + 1]);
+                    maxInclusive = true;
+                    break;
+                case "=":
+                    min = Version.Parse(parts[i + 1]);
+                    max = Version.Parse(parts[i + 1]);
+                    minInclusive = maxInclusive = true;
+                    break;
+            }
+        }
+
+        return new(min ?? throw new InvalidOperationException("Range should have minimum bound"), max, minInclusive,
+            maxInclusive);
+    }
     public static VersionRange Parse(string value)
     {
         value = value.Trim();
         if (char.IsDigit(value[0]))
             return Exact(Version.Parse(value));
 
+        if(value[0] is '>' or '<' or '=')
+            return ParseOperatorStyle(value);
+        
         var minInclusive = value[0] switch
         {
             '[' => true,

@@ -61,27 +61,28 @@ public class ProjectAssetsJsonReader
     private IEnumerable<Dependency> ProjectDependencies()
     {
         var project = ProjectComponent();
-        if (Root["libraries"] is JsonObject libraries)
+        // Project dependencies should be filled based on the projectFileDependencyGroups property
+        if (Root["projectFileDependencyGroups"] is JsonObject groups)
         {
-            foreach (var x in libraries)
+            foreach (var group in groups)
             {
-                var to = Component.Parse(x.Key);
-                if (x.Value is JsonObject o && o["type"] is JsonValue type && type.GetValue<string>() == "project")
-                    yield return new Dependency(project, Reference.Parse(x.Key));
-            }
-        }
-
-        if (Root["project"] is JsonObject proj
-            && proj["frameworks"] is JsonObject frameworks)
-        {
-            foreach(var fr in frameworks)
-            {
-                if (fr.Value is JsonObject fobj && fobj["dependencies"] is JsonObject dependencies)
+                if (group.Value is JsonArray arr)
                 {
-                    foreach (var y in dependencies)
-                        if (y.Value is JsonObject dep && dep["version"] is JsonValue version)
-                            yield return new Dependency(project,
-                                new Reference(y.Key, VersionRange.Parse(version.GetValue<string>()).MinimalToExact()));
+                    foreach (var item in arr)
+                    {
+                        if (item is JsonValue jv)
+                        {
+                            var s = jv.GetValue<string>();
+                            if (string.IsNullOrWhiteSpace(s))
+                                continue;
+
+                            var parts = s.Trim().Split(' ',2, StringSplitOptions.RemoveEmptyEntries);
+                            
+                            if(parts.Length == 2)
+                                yield return new Dependency(project, new Reference(parts[0], VersionRange.Parse(parts[1]).MinimalToExact()));
+                            
+                        }
+                    }
                 }
             }
         }
