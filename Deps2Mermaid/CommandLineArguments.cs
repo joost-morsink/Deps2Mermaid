@@ -14,7 +14,7 @@ public record CommandLineArguments(string Path, bool Help,
     string Filter, string StrongFilter, 
     string Exclude, string WeakExclude, 
     string? Zoom,
-    int Forward, int Backward, bool ProjectRoot, bool Verbose, OutputType OutputType)
+    int Forward, int Backward, bool ProjectRoot, bool Verbose, bool MultiPathAnalysis, OutputType OutputType)
 {
     void Test()
     {
@@ -42,6 +42,7 @@ Usage: deps2mermaid (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) 
         -f(or)w(ard) ([n])           Show only forward edges (optional max depth=n). 
         -b(ack)w(ard) ([n])          Show only backward edges (optional max depth=n). 
         -projectroot|-pr             Zoom to the project root.
+        -multipathanalysis | -mpa    Perform multi-path analysis, allowing to discover dependency path alternatives.
         -verbose|-v                  Show verbose output.
         -l(ive)                      Open the graph in the browser.
         -u(rl)                       Output the link to the graph in the browser.  
@@ -69,6 +70,7 @@ Usage: deps2mermaid (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) 
         var projectroot = named.ContainsKey("projectroot") || named.ContainsKey("pr");
         var verbose = named.ContainsKey("verbose") || named.ContainsKey("v");
         var live = named.ContainsKey("live") || named.ContainsKey("l");
+        var mpa = named.ContainsKey("multipathanalysis") || named.ContainsKey("mp") || named.ContainsKey("mpa");
         var forward = (named.TryGetValue("forward", out var x) || named.TryGetValue("fw", out x))
             ? int.TryParse(x, out var fwd)
                 ? fwd
@@ -95,7 +97,7 @@ Usage: deps2mermaid (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) 
         }
 
         return new(path, help, filter, strongFilter, exclude, weakExclude, zoom, forward, backward, projectroot,
-            verbose, outputType);
+            verbose, mpa, outputType);
     }
 
     private static (IReadOnlyList<string> positional, IReadOnlyDictionary<string, string> named)
@@ -128,4 +130,5 @@ Usage: deps2mermaid (-p(ath)) ([path]) (-help|-?) (-f(ilter) [filter]) (-z(oom) 
 
         return (positional, named);
     }
+
 }

@@ -1,9 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml.Serialization;
 
 namespace Deps;
 
@@ -205,6 +207,12 @@ public class Program
 
         writer.WriteLine("graph LR");
 
+        var adjacency = new Lazy<ILookup<string, string>>(() => 
+               (from d in dependencies
+                let src = d.Component.Name
+                select (src, dst: d.Reference.Name)).Distinct().ToLookup(x=> x.src, x => x.dst)
+        );
+        
         foreach (var dep in dependencies)
         {
             if (!((filter.IsMatch(dep.Component.Name) || filter.IsMatch(dep.Reference.Name))
@@ -219,7 +227,7 @@ public class Program
 
             writer.Write("  ");
             WriteReference(nodes[dep.Component.Name]);
-            WriteLink(dep);
+            WriteLink(dep, Arguments.MultiPathAnalysis ? !adjacency.Value.FindPaths(dep.Component.Name, dep.Reference.Name).Skip(1).Any() : false);
             WriteReference(nodes[dep.Reference.Name]);
             writer.WriteLine();
         }
@@ -233,17 +241,18 @@ public class Program
                 writer.Write(r.Name);
         }
 
-        void WriteLink(Dependency d)
+        void WriteLink(Dependency d, bool fat)
         {
+            var arrow = fat ? "==" : "--";
             if (nodes[d.Component.Name].VersionRanges.HasSingle() && nodes[d.Reference.Name].VersionRanges.HasSingle())
-                writer.Write(" --> ");
+                writer.Write($" {arrow}> ");
             else
             {
                 var left = nodes[d.Component.Name].VersionRanges.HasSingle() ? "" : d.Component.Version.ToString();
                 var right = nodes[d.Reference.Name].VersionRanges.HasSingle()
                     ? ""
                     : d.Reference.VersionRange.ToString();
-                writer.Write($" -- \"{left} -> {right}\"--> ");
+                writer.Write($" {arrow} \"{left} -> {right}\"{arrow}> ");
             }
         }
     }
@@ -254,5 +263,30 @@ public class Program
     {
         if (Arguments.Verbose)
             Console.Error.WriteLine(text);
+    }
+}
+
+public static class Exts
+{
+    extension<T>(ILookup<T, T> src)
+    {
+        public IEnumerable<ImmutableStack<T>> FindPaths(T from, T to, IEqualityComparer<T> comparer = null!)
+        {
+            comparer ??= EqualityComparer<T>.Default;
+            
+            var queue = new Queue<(ImmutableStack<T> path, T item)>();
+
+            queue.Enqueue((ImmutableStack<T>.Empty, from));
+            while (queue.Count > 0)
+            {
+                var entry = queue.Dequeue();
+                var newPath = entry.path.Push(entry.item);
+                if (comparer.Equals(entry.item, to))
+                    yield return newPath;
+                foreach(var next in src[entry.item])
+                    queue.Enqueue((newPath, next));
+            }
+
+        } 
     }
 }
