@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deps2Mermaid", "Deps2Mermaid\Deps2Mermaid.csproj", "{92A4D25A-9AD1-4DE2-A705-BFBA0FA9C3D7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deps2Mermaid.Tests", "Deps2Mermaid.Tests\Deps2Mermaid.Tests.csproj", "{544D49FF-BFD6-460F-B8F9-317D6617080D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{92A4D25A-9AD1-4DE2-A705-BFBA0FA9C3D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92A4D25A-9AD1-4DE2-A705-BFBA0FA9C3D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92A4D25A-9AD1-4DE2-A705-BFBA0FA9C3D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{544D49FF-BFD6-460F-B8F9-317D6617080D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{544D49FF-BFD6-460F-B8F9-317D6617080D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{544D49FF-BFD6-460F-B8F9-317D6617080D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{544D49FF-BFD6-460F-B8F9-317D6617080D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
